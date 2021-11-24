@@ -16,7 +16,6 @@ var notes = []note{
 	{ID: 1, Title: "First note", Author: "Alex", Body: "This is the very first note to check /get and /get/id endpoints"},
 }
 
-// getNotes returns the list of all notes in JSON.
 func getNotes(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, notes)
 }
@@ -32,6 +31,7 @@ func createNote(c *gin.Context) {
 
 func main() {
 	router := gin.Default()
-	router.GET("/get", getNotes)
+	router.POST("/get", getNotes)
+	router.POST("/create", createNote)
 	router.Run("localhost:8000")
 }
