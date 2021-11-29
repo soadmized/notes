@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strconv"
 )
@@ -39,6 +42,7 @@ func createNote(c *gin.Context) {
 	if err := c.BindJSON(&newNote); err != nil {
 		return
 	}
+	newNote.ID = rand.Intn(999 - 10 + 1)
 	notes = append(notes, newNote)
 	c.IndentedJSON(http.StatusCreated, newNote)
 }
@@ -66,6 +70,20 @@ func deleteNoteByID(c *gin.Context) {
 	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "note is not found"})
 }
 
+func updateNoteByID(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	bodyBytes, err := ioutil.ReadAll(c.Request.Body)
+	if err == nil {
+		fmt.Println(bodyBytes)
+	}
+	for _, a := range notes {
+		if a.ID == id {
+			return
+		}
+	}
+	//c.IndentedJSON(http.StatusNotFound, gin.H{"message": "note is not found"})
+}
+
 func greeting(c *gin.Context) {
 	c.String(http.StatusOK, greet)
 }
@@ -77,6 +95,7 @@ func main() {
 	router.POST("/create", createNote)
 	router.POST("/get/:id", getNoteByID)
 	router.POST("/delete/:id", deleteNoteByID)
+	router.POST("/update/:id", updateNoteByID)
 	err := router.Run("localhost:8000")
 	if err != nil {
 		panic("!!!")
