@@ -2,4 +2,6 @@ module notes
 
 go 1.16
 
-require github.com/gin-gonic/gin v1.7.6
+require (
+	github.com/gorilla/mux v1.8.0
+)

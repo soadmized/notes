@@ -1,9 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"io/ioutil"
+	"github.com/gorilla/mux"
+	"log"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -18,86 +19,92 @@ type note struct {
 
 var (
 	notes = []note{
-	{
-		ID: 1,
-		Title: "First note",
-		Author: "Alex",
-		Body: "This is the very first note to check /get and /get/id endpoints",
-	},
+		{
+			ID: 1,
+			Title: "First note",
+			Author: "Alex",
+			Body: "This is the very first note to check /get and /get/id endpoints",
+		},
 	}
-
-	greet = "POST /create - makes a note \n" +
-		"POST /get - get all notes\n" +
-		"POST /get/:id - get note with id\n" +
-		"POST /delete/:id - delete note with id"
-
 )
 
-func getNotes(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, notes)
+func main() {
+	r := mux.NewRouter()
+	r.HandleFunc("/", greeting).Methods("GET")
+	r.HandleFunc("/get", getNotes).Methods("POST")
+	r.HandleFunc("/get/{id}", getNoteByID).Methods("POST")
+	r.HandleFunc("/create", createNote).Methods("POST")
+	r.HandleFunc("/delete/{id}", deleteNoteByID).Methods("POST")
+	r.HandleFunc("/update/{id}", updateNoteByID).Methods("POST")
+	log.Fatal(http.ListenAndServe(":8000", r))
 }
 
-func createNote(c *gin.Context) {
-	var newNote note
-	if err := c.BindJSON(&newNote); err != nil {
+func greeting(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, `
+POST /create - makes a note
+POST /get - get all notes
+POST /get/:id - get note with id
+POST /delete/:id - delete note with id`)
+}
+
+func getNotes(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(notes)
+	if err != nil {
 		return
 	}
-	newNote.ID = rand.Intn(999 - 10 + 1)
-	notes = append(notes, newNote)
-	c.IndentedJSON(http.StatusCreated, newNote)
 }
 
-func getNoteByID(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	for _, a := range notes {
-		if a.ID == id {
-			c.IndentedJSON(http.StatusOK, a)
+func getNoteByID(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+	id, _ := strconv.Atoi(params["id"])
+	for _, item := range notes {
+		if item.ID == id {
+			json.NewEncoder(w).Encode(item)
 			return
 		}
 	}
-	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "note is not found"})
+	json.NewEncoder(w).Encode(&note{})
 }
 
-func deleteNoteByID(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	for i, a := range notes {
-		if a.ID == id {
+func createNote(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	note := note{}
+	_ = json.NewDecoder(r.Body).Decode(&note)
+	note.ID = rand.Intn(999 - 10 + 1)
+	notes = append(notes, note)
+	json.NewEncoder(w).Encode(note)
+}
+
+func deleteNoteByID(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+	id, _ := strconv.Atoi(params["id"])
+	for i, item := range notes {
+		if item.ID == id {
 			notes = append(notes[:i], notes[i+1:]...)
-			c.IndentedJSON(http.StatusOK, gin.H{"message": "note was deleted"})
+			json.NewEncoder(w).Encode("Note was deleted")
 			return
 		}
 	}
-	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "note is not found"})
+	json.NewEncoder(w).Encode("Note was not found")
 }
 
-func updateNoteByID(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	bodyBytes, err := ioutil.ReadAll(c.Request.Body)
-	if err == nil {
-		fmt.Println(bodyBytes)
-	}
-	for _, a := range notes {
-		if a.ID == id {
+func updateNoteByID(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+	id, _ := strconv.Atoi(params["id"])
+	for i, item := range notes {
+		if item.ID == id {
+			notes = append(notes[:i], notes[i+1:]...)
+			note := note{}
+			_ = json.NewDecoder(r.Body).Decode(&note)
+			note.ID = id
+			notes = append(notes, note)
+			json.NewEncoder(w).Encode(note)
 			return
 		}
 	}
-	//c.IndentedJSON(http.StatusNotFound, gin.H{"message": "note is not found"})
-}
-
-func greeting(c *gin.Context) {
-	c.String(http.StatusOK, greet)
-}
-
-func main() {
-	router := gin.Default()
-	router.GET("/", greeting)
-	router.POST("/get", getNotes)
-	router.POST("/create", createNote)
-	router.POST("/get/:id", getNoteByID)
-	router.POST("/delete/:id", deleteNoteByID)
-	router.POST("/update/:id", updateNoteByID)
-	err := router.Run("localhost:8000")
-	if err != nil {
-		panic("!!!")
-	}
+	json.NewEncoder(w).Encode(notes)
 }
