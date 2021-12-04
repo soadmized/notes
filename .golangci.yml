@@ -1,0 +1,16 @@
+run:
+  deadline: 2m
+linters:
+  enable-all: true
+  disable:
+    - golint
+    - maligned
+    - interfacer
+    - scopelint
+#    - exhaustivestruct
+#    - varnamelen
+#    - ireturn
+#    - nilnil
+linters-settings:
+  misspell:
+    locale: US

@@ -3,27 +3,28 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 	"log"
 	"math/rand"
 	"net/http"
 	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 type note struct {
-	ID int `json:"id"`
-	Title string `json:"title"`
+	ID     int    `json:"id"`
+	Title  string `json:"title"`
 	Author string `json:"author"`
-	Body string `json:"body"`
+	Body   string `json:"body"`
 }
 
 var (
 	notes = []note{
 		{
-			ID: 1,
-			Title: "First note",
+			ID:     1,
+			Title:  "First note",
 			Author: "Alex",
-			Body: "This is the very first note to check /get and /get/id endpoints",
+			Body:   "This is the very first note to check /get and /get/id endpoints",
 		},
 	}
 )
@@ -49,7 +50,9 @@ POST /delete/:id - delete note with id`)
 
 func getNotes(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	err := json.NewEncoder(w).Encode(notes)
+
 	if err != nil {
 		return
 	}
@@ -57,44 +60,76 @@ func getNotes(w http.ResponseWriter, r *http.Request) {
 
 func getNoteByID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["id"])
+
 	for _, item := range notes {
 		if item.ID == id {
-			json.NewEncoder(w).Encode(item)
+			err := json.NewEncoder(w).Encode(item)
+			if err != nil {
+				return
+			}
+
 			return
 		}
 	}
-	json.NewEncoder(w).Encode(&note{})
+
+	err := json.NewEncoder(w).Encode(&note{})
+	if err != nil {
+		return
+	}
 }
 
 func createNote(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	note := note{}
+
 	_ = json.NewDecoder(r.Body).Decode(&note)
 	note.ID = rand.Intn(999 - 10 + 1)
 	notes = append(notes, note)
-	json.NewEncoder(w).Encode(note)
+
+	err := json.NewEncoder(w).Encode(note)
+
+	if err != nil {
+		return
+	}
 }
 
 func deleteNoteByID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["id"])
+
 	for i, item := range notes {
 		if item.ID == id {
 			notes = append(notes[:i], notes[i+1:]...)
-			json.NewEncoder(w).Encode("Note was deleted")
+
+			err := json.NewEncoder(w).Encode("Note was deleted")
+
+			if err != nil {
+				return
+			}
+
 			return
 		}
 	}
-	json.NewEncoder(w).Encode("Note was not found")
+
+	err := json.NewEncoder(w).Encode("Note was not found")
+
+	if err != nil {
+		return
+	}
 }
 
 func updateNoteByID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["id"])
+
 	for i, item := range notes {
 		if item.ID == id {
 			notes = append(notes[:i], notes[i+1:]...)
@@ -102,9 +137,20 @@ func updateNoteByID(w http.ResponseWriter, r *http.Request) {
 			_ = json.NewDecoder(r.Body).Decode(&note)
 			note.ID = id
 			notes = append(notes, note)
-			json.NewEncoder(w).Encode(note)
+
+			err := json.NewEncoder(w).Encode(note)
+
+			if err != nil {
+				return
+			}
+
 			return
 		}
 	}
-	json.NewEncoder(w).Encode(notes)
+
+	err := json.NewEncoder(w).Encode(notes)
+
+	if err != nil {
+		return
+	}
 }
