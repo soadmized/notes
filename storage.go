@@ -4,6 +4,8 @@ import (
 	"errors"
 )
 
+var _ istorage = &storage{}
+
 type storage struct {
 	notes map[int]note
 }
@@ -38,8 +40,4 @@ func (s *storage) delete(id int) error {
 	}
 
 	return errors.New("note not found")
-}
-
-func (s *storage) update() {
-	panic("implement me")
 }
